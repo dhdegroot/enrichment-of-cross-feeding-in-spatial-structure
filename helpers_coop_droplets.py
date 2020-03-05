@@ -1,0 +1,24 @@
+from itertools import product
+
+from numpy import array, log, exp
+from scipy.special import gammaln
+
+
+def findTriplets(lst, key):
+    def valid(val):
+        return sum(val) == key
+
+    return list(filter(valid, list(product(lst, repeat=3))))
+
+
+def log_factorial(x):
+    """Returns the logarithm of x!
+    Also accepts lists and NumPy arrays in place of x."""
+    return gammaln(array(x) + 1)
+
+
+def multinomial(xs, ps):
+    n = sum(xs)
+    xs, ps = array(xs), array(ps)
+    result = log_factorial(n) - sum(log_factorial(xs)) + sum(xs * log(ps))
+    return exp(result)
