@@ -5,7 +5,7 @@ import seaborn as sns
 from helpers_coop_droplets import *
 
 """Constants"""
-SAVE_LAST_FIGURE = False
+SAVE_LAST_FIGURE = True
 SAVE_FIGURES = False
 SAVE_EACH_SIMU_FIGURE = False
 MAKE_EACH_SIMU_FIGURE = False
@@ -18,7 +18,10 @@ spec_names = ['a', 'b', 'c']
 
 freqs = np.asarray([5 / 12, 5 / 12, 2 / 12])
 CC0 = 750
+CCA_ind = 10
+CCB_ind = 10
 CCC_ind = 50
+adv_cheat = 2 / 5
 first_avg_nt = .15
 last_avg_nt = 8
 n_avg_nt = 20
@@ -36,8 +39,10 @@ for ind in range(N_SIMUS):
     freqs_simu[1] = (1 - diff_between_coops) * sum_coops
 
     CC0_simu = CC0
-    CCC_ind_simu = CC0_simu * max(np.random.normal(loc=CCC_ind / CC0, scale=0.2 * (CCC_ind / CC0), size=1), 0)
-    simu_dict_list.append({'freqs': freqs_simu, 'CC0': CC0_simu, 'CCC_ind': CCC_ind_simu})
+    CCC_ind_simu = CC0_simu * max(np.random.normal(loc=CCC_ind / CC0, scale=0.2 * (CCC_ind / CC0), size=1), 0)[0]
+    simu_dict_list.append(
+        {'freqs': freqs_simu, 'CC0': CC0_simu, 'CCC_ind': CCC_ind_simu, 'CCA_ind': CCA_ind, 'CCB_ind': CCB_ind,
+         'adv_cheat': adv_cheat})
 
 avg_nt_range = np.exp(np.linspace(np.log(first_avg_nt), np.log(last_avg_nt), n_avg_nt))
 if avg_nt_range.size > 2:
@@ -54,8 +59,8 @@ for simu_ind in range(N_SIMUS):
     G_array[:, 0] = avg_nt_range
 
     for nt_ind, avg_nt in enumerate(avg_nt_range):
-        if PRINT_ALOT:
-            print("Starting calculation for lambda equal to '{0}'".format(avg_nt))
+        if nt_ind % 10 == 9:
+            print("Starting calculation for the '{0}'th lambda".format(nt_ind+1))
 
         """Calculate for one choice of avg_nt a droplet_dataframe, and the average growth rate"""
         droplet_df_simu = calc_for_one_avg_nt(simu_dict=simu_dict, avg_nt=avg_nt)
@@ -76,7 +81,7 @@ for simu_ind in range(N_SIMUS):
                 plt.savefig(os.path.join(working_dir, "results", "pdf_G_" + spec + ".png"))
 
     # G_diff_avg_coop_min_cheater = np.zeros((G_array.shape[0],1))
-    G_diff_avg_coop_min_cheater = 0.5*(G_array[:,1]+G_array[:,2]) - G_array[:,3]
+    G_diff_avg_coop_min_cheater = 0.5 * (G_array[:, 1] + G_array[:, 2]) - G_array[:, 3]
     # G_array = np.concatenate((G_array, 0.5 * (G_array[:, 1] + G_array[:, 2]) - G_array[:, 3]))
     G_array = np.concatenate((G_array, simu_ind * np.ones((avg_nt_range.size, 1)).astype(int)), axis=1)
     G_df_simu = pd.DataFrame(data=G_array, columns=['lambda', 'A', 'B', 'C', 'simulation'])
