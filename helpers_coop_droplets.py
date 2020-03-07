@@ -68,7 +68,10 @@ def plot_pdf(val_freq_array, plot_type='Beautiful', xlabel='fraction cooperators
 def calc_for_one_avg_nt(simu_dict, avg_nt=8, PRINT_ALOT=False):
     freqs = simu_dict['freqs']
     CC0 = simu_dict['CC0']
+    CCA_ind = simu_dict['CCA_ind']
+    CCB_ind = simu_dict['CCB_ind']
     CCC_ind = simu_dict['CCC_ind']
+    adv_cheat = simu_dict['adv_cheat']
 
     """First, find the range of the number of cells we expect in droplets"""
     nt_range = np.arange(poisson.ppf(0.0001, avg_nt), poisson.ppf(0.9999, avg_nt)).astype(int)
@@ -94,19 +97,31 @@ def calc_for_one_avg_nt(simu_dict, avg_nt=8, PRINT_ALOT=False):
             coop_frac = 0.0 if denom == 0 else (2 * min(na, nb)) / denom
 
             # Find growth rates for all species in this droplet
+            # Growth factor option 1
             # end_ab = CC0 * coop_frac * (1 / 2) * (1 - (nc / nt)) if nt != 0 else 0.
             # mua = (1 / na) * end_ab if na != 0 else 0.
             # mub = (1 / nb) * end_ab if nb != 0 else 0.
             # muc = (1 / nc) * (CC0 * coop_frac + CCC_ind) * (nc / nt) if nc != 0 else 0.
 
             # Find growth rates for all species in this droplet
-            end_ab = CC0 * coop_frac * (1 / 2) * coop_frac if nt != 0 else 0.
-            mua = (1 / na) * end_ab if na != 0 else 0.
-            mub = (1 / nb) * end_ab if nb != 0 else 0.
-            muc = (1 / nc) * (CC0 * coop_frac + CCC_ind) * (1 - coop_frac) if nc != 0 else 0.
+            # Growth factor option 2
+            # end_ab = CC0 * coop_frac * (1 / 2) * coop_frac if nt != 0 else 0.
+            # mua = (1 / na) * end_ab if na != 0 else 0.
+            # mub = (1 / nb) * end_ab if nb != 0 else 0.
+            # muc = (1 / nc) * (CC0 * coop_frac + CCC_ind) * (1 - coop_frac) if nc != 0 else 0.
+
+            # Find growth rates for all species in this droplet
+            # Growth factor option 3 (best option)
+            end_fc = (1 + adv_cheat) * (nc / nt) - adv_cheat * (nc / nt) ** 2 if nt != 0 else 0.
+            end_fab = (1 / 2) * (1 - end_fc)
+
+            mua = (1 - coop_frac) * (1 / na) * CCA_ind + coop_frac * (1 / na) * CC0 * end_fab if na != 0 else 0.
+            mub = (1 - coop_frac) * (1 / nb) * CCB_ind + coop_frac * (1 / nb) * CC0 * end_fab if nb != 0 else 0.
+            muc = (1 - coop_frac) * (1 / nc) * CCC_ind + coop_frac * (1 / nc) * CC0 * end_fc if nc != 0 else 0.
 
             droplet_df = droplet_df.append(
                 {'na': na, 'nb': nb, 'nc': nc, 'prob_droplet': prob_droplet, 'pa': p_species[0], 'pb': p_species[1],
                  'pc': p_species[2], 'coop_frac': coop_frac, 'mua': mua, 'mub': mub, 'muc': muc}, ignore_index=True)
 
+    # Replace all nans by zero. These nans occur when no cells are around, so growth rate should be zero then.
     return droplet_df
