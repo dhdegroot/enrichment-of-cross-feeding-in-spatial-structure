@@ -1,5 +1,6 @@
+import os
 from itertools import product
-
+import seaborn as sns
 import numpy as np
 import pandas as pd
 import scipy
@@ -125,3 +126,48 @@ def calc_for_one_avg_nt(simu_dict, avg_nt=8, PRINT_ALOT=False):
 
     # Replace all nans by zero. These nans occur when no cells are around, so growth rate should be zero then.
     return droplet_df
+
+
+def calc_for_one_simu(simu_ind, simu_dict, avg_nt_range, spec_names=['a', 'b', 'c'], MAKE_PLOTS=False, PRINT_ALOT=False,
+                      SAVE_FIGURES=False, MAKE_EACH_SIMU_FIGURE=False):
+    working_dir = os.getcwd()
+    G_array = np.zeros((avg_nt_range.size, 4))
+    G_array[:, 0] = avg_nt_range
+
+    for nt_ind, avg_nt in enumerate(avg_nt_range):
+        if nt_ind % 10 == 9:
+            print("Starting calculation for the '{0}'th lambda".format(nt_ind + 1))
+
+        """Calculate for one choice of avg_nt a droplet_dataframe, and the average growth rate"""
+        droplet_df_simu = calc_for_one_avg_nt(simu_dict=simu_dict, avg_nt=avg_nt)
+
+        # Plot probability distribution for each species of being in a droplet with pairs of cooperators
+        # And the probability distribution for the growth rates, and calculate average growth in the meantime
+        plot_type = 'Fast' if MAKE_PLOTS else 'None'
+        for spec_ind, spec in enumerate(spec_names):
+            val_freq_coop_frac = np.hstack((droplet_df_simu[['coop_frac']], droplet_df_simu[['p' + spec]]))
+            plot_pdf(val_freq_coop_frac, xlabel='fraction cooperators', species_name=spec, plot_type=plot_type)
+            if SAVE_FIGURES:
+                plt.savefig(os.path.join(working_dir, "results", "pdf_frac_coop_" + spec + ".png"))
+
+            val_freq_G = np.hstack((droplet_df_simu[['mu' + spec]], droplet_df_simu[['p' + spec]]))
+            G_array[nt_ind, 1 + spec_ind] = plot_pdf(val_freq_G, xlabel='growth factor', species_name=spec,
+                                                     plot_type=plot_type)
+            if SAVE_FIGURES:
+                plt.savefig(os.path.join(working_dir, "results", "pdf_G_" + spec + ".png"))
+
+    # G_diff_avg_coop_min_cheater = np.zeros((G_array.shape[0],1))
+    G_diff_avg_coop_min_cheater = 0.5 * (G_array[:, 1] + G_array[:, 2]) - G_array[:, 3]
+    # G_array = np.concatenate((G_array, 0.5 * (G_array[:, 1] + G_array[:, 2]) - G_array[:, 3]))
+    G_array = np.concatenate((G_array, simu_ind * np.ones((avg_nt_range.size, 1)).astype(int)), axis=1)
+    G_df_simu = pd.DataFrame(data=G_array, columns=['lambda', 'A', 'B', 'C', 'simulation'])
+    G_df_simu['coop_advantage'] = G_diff_avg_coop_min_cheater
+    G_df_simu_tidy = pd.melt(G_df_simu, ['lambda', 'simulation'], var_name='species', value_name='G')
+
+    if MAKE_EACH_SIMU_FIGURE:
+        ax = sns.lineplot(x="lambda", y="G", hue="species", data=G_df_simu_tidy)
+        plt.savefig(os.path.join(working_dir, "results", "growth_dep_on_lambda.png"))
+
+        plt.show()
+
+    return G_df_simu_tidy
