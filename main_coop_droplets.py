@@ -7,7 +7,7 @@ MAKE_EACH_SIMU_FIGURE = False
 PRINT_ALOT = False
 MAKE_PLOTS = True
 working_dir = os.getcwd()
-N_SIMUS = 200
+N_SIMUS = 2000
 np.random.seed(3141)
 spec_names = ['a', 'b', 'c']
 
@@ -66,7 +66,7 @@ ax = sns.lineplot(x="lambda", y="G", hue="simulation", data=G_df[G_df.species ==
 if SAVE_LAST_FIGURE:
     plt.savefig(os.path.join(working_dir, "results", "growth_dep_on_lambda_different_simulations.png"))
 
-plt.show()
+# plt.show()
 
 """At this point, we are left with G_df in which the average growth rate curves for the different simulations are shown,
 and with a simu_dict_list where we have stored the parameters for each simulation"""
