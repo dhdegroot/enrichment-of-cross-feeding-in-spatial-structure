@@ -65,6 +65,11 @@ if SAVE_FIGURES:
 # Make plot in which you plot max_benefit, max_benefit_lambda
 plt.figure(3)
 ax3 = sns.scatterplot(x='max_benefit', y='max_benefit_lambda', data=results_df)
+avg_max_benefit = np.mean(results_df.max_benefit.values)
+avg_max_benefit_lambda = np.mean(results_df.max_benefit_lambda.values)
+print("Starting with different parameters, the maximal benefit for cooperators was on average attained at a lambda of "
+      "'{0}'".format(avg_max_benefit_lambda))
+ax3.scatter(x=avg_max_benefit, y=avg_max_benefit_lambda, color='r', s=200)
 if SAVE_FIGURES:
     plt.savefig(os.path.join(working_dir, "results", "max_benefit_vs_max_benefit_lambda"))
 
