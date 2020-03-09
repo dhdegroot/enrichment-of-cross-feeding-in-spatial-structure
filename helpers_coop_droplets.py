@@ -1,9 +1,10 @@
 import os
 from itertools import product
-import seaborn as sns
+
 import numpy as np
 import pandas as pd
 import scipy
+import seaborn as sns
 from matplotlib import pyplot as plt
 from scipy.special import gammaln
 from scipy.stats import poisson
@@ -23,16 +24,30 @@ def log_factorial(x):
 
 
 def multinomial(xs, ps):
+    # The following if else statement makes it work even when one or more of the ps is zero.
+    if min(ps) == 0:
+        delete_inds = []
+        zero_prob_indices = np.where(ps == 0)[0]
+        for ind in zero_prob_indices:
+            if xs[ind] > 0:
+                return 0.
+            else:
+                delete_inds.append(ind)
+
+        xs = np.delete(xs, delete_inds, axis=0)
+        ps = np.delete(ps, delete_inds, axis=0)
+
     n = sum(xs)
     xs, ps = np.array(xs), np.array(ps)
     result = log_factorial(n) - sum(log_factorial(xs)) + sum(xs * np.log(ps))
+
     return np.exp(result)
 
 
 def plot_pdf(val_freq_array, plot_type='Beautiful', xlabel='fraction cooperators', species_name='A'):
     vals = val_freq_array[:, 0]
     freqs = val_freq_array[:, 1]
-    mean = np.sum(vals * freqs) / np.sum(freqs)
+    mean = np.sum(vals * freqs) / np.sum(freqs) if np.sum(freqs) != 0 else 0.
 
     bandwidth = 0.1 * vals.std() * vals.size ** (-1 / 5.)
     support = np.linspace(min(vals) - bandwidth, max(vals) + bandwidth, 200)
@@ -66,7 +81,7 @@ def plot_pdf(val_freq_array, plot_type='Beautiful', xlabel='fraction cooperators
     return mean
 
 
-def calc_for_one_avg_nt(simu_dict, avg_nt=8, PRINT_ALOT=False):
+def calc_for_one_avg_nt(simu_dict, avg_nt=8, PRINT_ALOT=False, spec_names=['a', 'b', 'c']):
     freqs = simu_dict['freqs']
     CC0 = simu_dict['CC0']
     CCA_ind = simu_dict['CCA_ind']
@@ -91,7 +106,13 @@ def calc_for_one_avg_nt(simu_dict, avg_nt=8, PRINT_ALOT=False):
             prob_droplet = prob_nt * multinomial([na, nb, nc], freqs)
 
             # Calculate prob of cell of species to be in this droplet (according to maintext-file)
-            p_species = np.asarray([na, nb, nc]) / (freqs * avg_nt) * prob_droplet
+            # The first part is necessary if one of the freqs is 0
+            freqs_corrected = freqs.copy()
+            if any(freqs == 0):
+                zero_freq_inds = np.where(freqs == 0)[0]
+                for ind in zero_freq_inds:
+                    freqs_corrected[ind] = 1  # This evades dividing through zero, result will be zero anyhow
+            p_species = np.asarray([na, nb, nc]) / (freqs_corrected * avg_nt) * prob_droplet
 
             # Find fraction of cooperator pairs
             denom = 2 * min(na, nb) + nc
@@ -131,6 +152,9 @@ def calc_for_one_avg_nt(simu_dict, avg_nt=8, PRINT_ALOT=False):
 def calc_for_one_simu(simu_ind, simu_dict, avg_nt_range, spec_names=['a', 'b', 'c'], MAKE_PLOTS=False, PRINT_ALOT=False,
                       SAVE_FIGURES=False, MAKE_EACH_SIMU_FIGURE=False):
     working_dir = os.getcwd()
+    if type(avg_nt_range) is not np.ndarray:
+        avg_nt_range = np.array([avg_nt_range])
+
     G_array = np.zeros((avg_nt_range.size, 4))
     G_array[:, 0] = avg_nt_range
 
@@ -171,3 +195,14 @@ def calc_for_one_simu(simu_ind, simu_dict, avg_nt_range, spec_names=['a', 'b', '
         plt.show()
 
     return G_df_simu_tidy
+
+
+def get_starting_parameters():
+    freqs = np.asarray([5 / 12, 5 / 12, 2 / 12])
+    CC0 = 750
+    CCA_ind = 10
+    CCB_ind = 10
+    CCC_ind = 50
+    adv_cheat = 2 / 5
+
+    return freqs, CC0, CCA_ind, CCB_ind, CCC_ind, adv_cheat

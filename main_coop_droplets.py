@@ -11,12 +11,8 @@ N_SIMUS = 2000
 np.random.seed(3141)
 spec_names = ['a', 'b', 'c']
 
-freqs = np.asarray([5 / 12, 5 / 12, 2 / 12])
-CC0 = 750
-CCA_ind = 10
-CCB_ind = 10
-CCC_ind = 50
-adv_cheat = 2 / 5
+# Get parameters. These can be changed in helpers_coop_droplets file
+freqs, CC0, CCA_ind, CCB_ind, CCC_ind, adv_cheat = get_starting_parameters()
 
 first_avg_nt = .15
 last_avg_nt = 8
@@ -70,7 +66,6 @@ if SAVE_LAST_FIGURE:
 
 """At this point, we are left with G_df in which the average growth rate curves for the different simulations are shown,
 and with a simu_dict_list where we have stored the parameters for each simulation"""
-# TODO: Create dataframe with information about simulation (from simu_dict_list) + results (from G_df)
 G_df['freqa'] = G_df['freqb'] = G_df['freqc'] = 0
 G_df['CC0'] = G_df['CCC_ind'] = G_df['CCA_ind'] = G_df['CCB_ind'] = G_df['adv_cheat'] = 0
 for simu_ind in range(N_SIMUS):
