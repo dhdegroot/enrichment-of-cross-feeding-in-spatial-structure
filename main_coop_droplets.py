@@ -7,7 +7,7 @@ MAKE_EACH_SIMU_FIGURE = False
 PRINT_ALOT = False
 MAKE_PLOTS = True
 working_dir = os.getcwd()
-N_SIMUS = 2000
+N_SIMUS = 200
 np.random.seed(3141)
 spec_names = ['a', 'b', 'c']
 

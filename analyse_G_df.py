@@ -8,7 +8,7 @@ import seaborn as sns
 SAVE_FIGURES = True
 
 working_dir = os.getcwd()
-G_df = pd.read_csv(os.path.join(working_dir, "results", "saved_results", "2000_simus_G_df.csv"))
+G_df = pd.read_csv(os.path.join(working_dir, "results", "saved_results", "200_simus_G_df.csv"))
 
 n_simus = int(max(G_df.simulation.values)) + 1
 
@@ -30,8 +30,11 @@ for simu_ind in range(n_simus):
 
     # Determine range of avg_nt for which cooperator benefit is positive
     pos_avg_nt = G_df_simu[G_df_simu.G >= 0]['lambda']
-    min_pos_avg_nt = min(pos_avg_nt)
-    max_pos_avg_nt = max(pos_avg_nt)
+    if pos_avg_nt.empty:
+        min_pos_avg_nt = max_pos_avg_nt = np.nan
+    else:
+        min_pos_avg_nt = min(pos_avg_nt)
+        max_pos_avg_nt = max(pos_avg_nt)
 
     # Determine absolute fold change difference from a to b
     fold_diff_ab = np.abs(np.log2(G_df_simu['freqa'].iloc[0] / G_df_simu['freqb'].iloc[0]))

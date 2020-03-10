@@ -14,10 +14,10 @@ MAKE_PLOTS = False
 freqs, CC0, CCA_ind, CCB_ind, CCC_ind, adv_cheat = get_starting_parameters()
 
 avg_nt = 1.811  # This nt was picked because it was the lambda that gave the largest benefit to coops on average
-N_START_FREQCS = 300
+N_START_FREQCS = 100
 
 """Calculate for different cheater starter fractions, if the cooperators or the cheaters will win"""
-start_freqcs = np.linspace(0.000, 0.9999, N_START_FREQCS)
+start_freqcs = np.linspace(0.0001, 0.9999, N_START_FREQCS)
 simu_dict_list = []
 
 for freqc in start_freqcs:
