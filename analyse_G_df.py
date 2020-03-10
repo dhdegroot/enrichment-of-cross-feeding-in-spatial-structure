@@ -8,7 +8,8 @@ import seaborn as sns
 SAVE_FIGURES = True
 
 working_dir = os.getcwd()
-G_df = pd.read_csv(os.path.join(working_dir, "results", "saved_results", "200_simus_G_df.csv"))
+G_df = pd.read_csv(
+    os.path.join(working_dir, "results", "saved_results", "2000_iterations_uniform_dist_G_df_parameters_sampled.csv"))
 
 n_simus = int(max(G_df.simulation.values)) + 1
 

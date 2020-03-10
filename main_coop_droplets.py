@@ -78,4 +78,4 @@ for simu_ind in range(N_SIMUS):
         else:
             G_df.loc[G_df.simulation == simu_ind, key] = simu_dict[key]
 
-G_df.to_csv(os.path.join(working_dir, "results", "G_df.csv"), index=False, header=True)
+G_df.to_csv(os.path.join(working_dir, "results", "G_df_parameters_sampled.csv"), index=False, header=True)

@@ -9,7 +9,7 @@ SAVE_FIGURES = False
 MAKE_EACH_SIMU_FIGURE = False
 PRINT_ALOT = False
 MAKE_PLOTS = False
-N_ITERATIONS = 10
+N_ITERATIONS = 40
 N_CCC_ind = 20
 N_CCAB_ind = 20
 
@@ -17,7 +17,7 @@ N_CCAB_ind = 20
 # These parameters can be changed in the helpers_coop_droplets.py-file
 freqs, CC0, CCA_ind, CCB_ind, CCC_ind, adv_cheat = get_starting_parameters()
 
-avg_nt = 1.811  # This nt was picked because it was the lambda that gave the largest benefit to coops on average
+avg_nt = 2  # This nt was picked because it was the lambda that gave a large benefit to coops on average
 start_freqs = np.array([0.5, 0.01, 0.49])
 
 start_CCC_ind_factor = 0.05
@@ -91,11 +91,12 @@ G_df['ratio_CCCind_CC0'] = G_df['ratio_CCCind_CC0'].astype(float)
 
 G_df.to_csv(os.path.join(working_dir, "results", "G_df_fixed_lambda_several_iterations.csv"), index=False, header=True)
 
-plt.figure(1)
-ax = sns.lineplot(x='iteration', y='start_freq', hue='ratio_CCCind_CC0', style='ratio_CCABind_CCCind', data=G_df[G_df.species == 'C'])
-ax.grid(b=True)
-if SAVE_LAST_FIGURE:
-    plt.savefig(os.path.join(working_dir, "results", "species_fraction_during_iterations.png"))
+if N_CCAB_ind < 3:
+    plt.figure(1)
+    ax = sns.lineplot(x='iteration', y='start_freq', hue='ratio_CCCind_CC0', style='ratio_CCABind_CCCind', data=G_df[G_df.species == 'C'])
+    ax.grid(b=True)
+    if SAVE_LAST_FIGURE:
+        plt.savefig(os.path.join(working_dir, "results", "species_fraction_during_iterations.png"))
 
 plt.figure(2)
 ax2 = sns.scatterplot(x='ratio_CCCind_CC0', y='ratio_CCABind_CCCind', hue='start_freq',
@@ -109,5 +110,7 @@ ax2.set_ylabel('Background growth cooperator/Background growth cheater')
 
 if SAVE_LAST_FIGURE:
     plt.savefig(os.path.join(working_dir, "results", "Final cheater fraction after iterations.png"))
+    plt.savefig(os.path.join(working_dir, "results", "Final cheater fraction after iterations.svg"))
+
 
 
