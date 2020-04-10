@@ -1,10 +1,9 @@
-import os
-from itertools import product
-
 import numpy as np
+import os
 import pandas as pd
 import scipy
 import seaborn as sns
+from itertools import product
 from matplotlib import pyplot as plt
 from scipy.special import gammaln
 from scipy.stats import poisson
@@ -90,7 +89,7 @@ def calc_for_one_avg_nt(simu_dict, avg_nt=8, PRINT_ALOT=False, spec_names=['a', 
     adv_cheat = simu_dict['adv_cheat']
 
     """First, find the range of the number of cells we expect in droplets"""
-    nt_range = np.arange(poisson.ppf(0.0001, avg_nt), poisson.ppf(0.9999, avg_nt)).astype(int)
+    nt_range = np.arange(poisson.ppf(0.0000001, avg_nt), poisson.ppf(0.99999999, avg_nt)).astype(int)
     droplet_df = pd.DataFrame(
         columns=['na', 'nb', 'nc', 'prob_droplet', 'pa', 'pb', 'pc', 'coop_frac', 'mua', 'mub', 'muc'])
 
@@ -134,12 +133,12 @@ def calc_for_one_avg_nt(simu_dict, avg_nt=8, PRINT_ALOT=False, spec_names=['a', 
 
             # Find growth rates for all species in this droplet
             # Growth factor option 3 (best option)
-            end_fc = (1 + adv_cheat) * (nc / nt) - adv_cheat * (nc / nt) ** 2 if nt != 0 else 0.
+            end_fc = min(1, (1 + adv_cheat) * (nc / nt) - adv_cheat * (nc / nt) ** 2 if nt != 0 else 0.)
             end_fab = (1 / 2) * (1 - end_fc)
 
-            mua = (1 - coop_frac) * (1 / na) * CCA_ind + coop_frac * (1 / na) * CC0 * end_fab if na != 0 else 0.
-            mub = (1 - coop_frac) * (1 / nb) * CCB_ind + coop_frac * (1 / nb) * CC0 * end_fab if nb != 0 else 0.
-            muc = (1 - coop_frac) * (1 / nc) * CCC_ind + coop_frac * (1 / nc) * CC0 * end_fc if nc != 0 else 0.
+            mua = max((1 - coop_frac)* (1 / na)* CCA_ind + coop_frac * (1/na) * CC0 * end_fab,1) if na != 0 else 0.
+            mub = max((1 - coop_frac) * (1 / nb) * CCB_ind + coop_frac * (1 / nb) * CC0 * end_fab,1) if nb != 0 else 0.
+            muc = max((1 - coop_frac) * (1 / nc) * CCC_ind + coop_frac * (1 / nc) * CC0 * end_fc,1) if nc != 0 else 0.
 
             droplet_df = droplet_df.append(
                 {'na': na, 'nb': nb, 'nc': nc, 'prob_droplet': prob_droplet, 'pa': p_species[0], 'pb': p_species[1],
@@ -156,7 +155,9 @@ def calc_for_one_simu(simu_ind, simu_dict, avg_nt_range, spec_names=['a', 'b', '
         avg_nt_range = np.array([avg_nt_range])
 
     G_array = np.zeros((avg_nt_range.size, 4))
+    end_freq_array = np.zeros((avg_nt_range.size, 4))
     G_array[:, 0] = avg_nt_range
+    end_freq_array[:, 0] = avg_nt_range
 
     for nt_ind, avg_nt in enumerate(avg_nt_range):
         if nt_ind % 10 == 9:
@@ -183,10 +184,21 @@ def calc_for_one_simu(simu_ind, simu_dict, avg_nt_range, spec_names=['a', 'b', '
     # G_diff_avg_coop_min_cheater = np.zeros((G_array.shape[0],1))
     G_diff_avg_coop_min_cheater = 0.5 * (G_array[:, 1] + G_array[:, 2]) - G_array[:, 3]
     # G_array = np.concatenate((G_array, 0.5 * (G_array[:, 1] + G_array[:, 2]) - G_array[:, 3]))
-    G_array = np.concatenate((G_array, simu_ind * np.ones((avg_nt_range.size, 1)).astype(int)), axis=1)
+    end_freq_array[:, 1:] = np.tile(simu_dict['freqs'], (end_freq_array.shape[0], 1)) * G_array[:, 1:]
+    norm_column = np.sum(end_freq_array[:, 1:], axis=1)
+    norm_column[norm_column == 0] = 1
+    norm_column = norm_column[:, np.newaxis]
+    end_freq_array[:, 1:] = end_freq_array[:, 1:] / np.tile(norm_column, (1, 3))
+
+    G_array = np.concatenate((G_array, int(simu_ind) * np.ones((avg_nt_range.size, 1)).astype(int)), axis=1)
+    end_freq_array = np.concatenate((end_freq_array, int(simu_ind) * np.ones((avg_nt_range.size, 1)).astype(int)),
+                                    axis=1)
     G_df_simu = pd.DataFrame(data=G_array, columns=['lambda', 'A', 'B', 'C', 'simulation'])
+    end_freq_df_simu = pd.DataFrame(data=end_freq_array, columns=['lambda', 'A', 'B', 'C', 'simulation'])
     G_df_simu['coop_advantage'] = G_diff_avg_coop_min_cheater
     G_df_simu_tidy = pd.melt(G_df_simu, ['lambda', 'simulation'], var_name='species', value_name='G')
+    end_freq_df_simu_tidy = pd.melt(end_freq_df_simu, ['lambda', 'simulation'], var_name='species',
+                                    value_name='end_freq')
 
     if MAKE_EACH_SIMU_FIGURE:
         ax = sns.lineplot(x="lambda", y="G", hue="species", data=G_df_simu_tidy)
@@ -194,15 +206,38 @@ def calc_for_one_simu(simu_ind, simu_dict, avg_nt_range, spec_names=['a', 'b', '
 
         plt.show()
 
-    return G_df_simu_tidy
+    return G_df_simu_tidy, end_freq_df_simu_tidy
 
 
 def get_starting_parameters():
     freqs = np.asarray([5 / 12, 5 / 12, 2 / 12])
     CC0 = 750
-    CCA_ind = 10
-    CCB_ind = 10
-    CCC_ind = 50
-    adv_cheat = 2 / 5
+    CCA_ind = 0
+    CCB_ind = 0
+    CCC_ind = 0
+    adv_cheat = 2/5
 
     return freqs, CC0, CCA_ind, CCB_ind, CCC_ind, adv_cheat
+
+
+def plot_stacked_bars(x_variable, y_variable, **kwargs):
+    ax = plt.gca()
+    data = kwargs.pop("data")
+    species = kwargs.pop("species")
+    new_color = kwargs.pop("new_color")
+    data = data[data['species'] == species]
+    sns.barplot(x=x_variable, y=y_variable, ax=ax, data=data, color=new_color)
+
+
+def mullerplot(x_variable, y_variable, **kwargs):
+    ax = plt.gca()
+    data = kwargs.pop("data")
+    data = data.sort_values('lambda')
+    x = np.unique(np.sort(data['lambda'])).tolist()
+    ya = data[data['species'] == 'A'][['end_freq']].values.flatten()
+    yb = data[data['species'] == 'B'][['end_freq']].values.flatten()
+    yc = data[data['species'] == 'C'][['end_freq']].values.flatten()
+    new_colors = kwargs.pop("new_colors")
+    y = np.vstack((ya, yb, yc)).tolist()
+
+    ax.stackplot(x, y, colors=new_colors)
