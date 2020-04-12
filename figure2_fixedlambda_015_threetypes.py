@@ -3,61 +3,114 @@ from helpers_coop_droplets import *
 """Constants"""
 working_dir = os.getcwd()
 spec_names = ['a', 'b', 'c']
+spec_names_caps = ['A', 'B', 'C']
+model_types = ['dependent', 'indep. costless', 'indep. costly']
 SAVE_LAST_FIGURE = True
 SAVE_FIGURES = False
 MAKE_EACH_SIMU_FIGURE = False
 PRINT_ALOT = False
 MAKE_PLOTS = False
+N_SIMUS = 5 * 2 + 1
+N_ITERATIONS = 4
 
 """Get parameters"""
 # These parameters can be changed in the helpers_coop_droplets.py-file
 freqs, CC0, CCA_ind, CCB_ind, CCC_ind, adv_cheat = get_starting_parameters()
 
-avg_nt = 1.811  # This nt was picked because it was the lambda that gave the largest benefit to coops on average
+simu_dict_list = []
+avg_nt = .15  # This nt was picked because it was the lambda that gave the largest benefit to coops on average
 N_START_FREQCS = 4
 
+CCAind_types = [0, 150, 0]
+CCBind_types = [0, 150, 75]
+CCCind_types = [0, 150, 150]
+
+"""Generate set of parameters for all simulations"""
+cheater_freqs = np.linspace(0, 1, (N_SIMUS + 1) / 2)
+for ind in range(int(np.ceil((N_SIMUS + 1) / 2))):
+    init_type = ind
+    freqs_simu_first = np.array([(1 - cheater_freqs[ind]) / 2, (1 - cheater_freqs[ind]) / 2, cheater_freqs[ind]])
+    freqs_simu_second = np.array([4 * (1 - cheater_freqs[ind]) / 5, (1 - cheater_freqs[ind]) / 5, cheater_freqs[ind]])
+
+    for i in range(3):
+        simu_dict_list.append(
+            {'freqs': freqs_simu_first, 'CC0': CC0, 'CCC_ind': CCCind_types[i], 'CCA_ind': CCAind_types[i],
+             'CCB_ind': CCBind_types[i], 'adv_cheat': adv_cheat, 'init_type': int(init_type * 2),
+             'model_type': model_types[i]})
+        if not ind == int(np.ceil((N_SIMUS + 1) / 2) - 1):
+            simu_dict_list.append(
+                {'freqs': freqs_simu_second, 'CC0': CC0, 'CCC_ind': CCCind_types[i], 'CCA_ind': CCAind_types[i],
+                 'CCB_ind': CCBind_types[i], 'adv_cheat': adv_cheat, 'init_type': int(init_type * 2 + 1),
+                 'model_type': model_types[i]})
+
+N_SIMUS = N_SIMUS * 3
+
 """Calculate for different cheater starter fractions, if the cooperators or the cheaters will win"""
-start_freqcs = np.linspace(0.0001, 0.9999, N_START_FREQCS)
-simu_dict_list = []
+end_freq_df = pd.DataFrame(
+    columns=['lambda', 'simulation', 'species', 'end_freq', 'iteration', 'init_type', 'model_type'])
 
-for freqc in start_freqcs:
-    freqs_simu = np.array([0.5 - 0.5 * freqc, 0.5 - 0.5 * freqc, freqc])
-    simu_dict_list.append(
-        {'freqs': freqs_simu, 'CC0': CC0, 'CCC_ind': CCC_ind, 'CCA_ind': CCA_ind, 'CCB_ind': CCB_ind,
-         'adv_cheat': adv_cheat})
+for simu_ind, simu_dict in enumerate(simu_dict_list):
+    end_freq_df_iter = pd.DataFrame(columns=['lambda', 'simulation', 'species', 'end_freq', 'iteration'])
 
-G_df = pd.DataFrame(columns=['lambda', 'simulation', 'species', 'G'])
+    # Add as first iter the startpoint
+    end_freq_df_iter = end_freq_df_iter.append(
+        pd.DataFrame.from_dict(
+            {'lambda': avg_nt, 'simulation': simu_ind, 'species': spec_names_caps, 'end_freq': simu_dict['freqs'],
+             'iteration': 0}))
 
-# Run all different simulations
-for freqc_ind in range(N_START_FREQCS):
-    print("Starting simulation '{0}'".format(freqc_ind))
-    simu_dict = simu_dict_list[freqc_ind]
+    print("Starting simulation '{0}'".format(simu_ind))
+    freqs_simu = simu_dict['freqs'].copy()
+    CCC_ind = simu_dict['CCC_ind']
+    CCA_ind = simu_dict['CCA_ind']
+    CCB_ind = simu_dict['CCB_ind']
+    iter_dict_list = []
+    for iter_ind in range(N_ITERATIONS):
+        if iter_ind % 5 == 4:
+            print("Computing '{0}'th iteration".format(iter_ind + 1))
+        iter_dict = {'freqs': freqs_simu.copy(), 'CC0': CC0, 'CCC_ind': CCC_ind, 'CCA_ind': CCA_ind, 'CCB_ind': CCB_ind,
+                     'adv_cheat': adv_cheat}
+        iter_dict_list.append(iter_dict)
 
-    # Calculate growth dataframe for one simulation
-    G_df_simu_tidy = calc_for_one_simu(freqc_ind, simu_dict, avg_nt, spec_names=spec_names, MAKE_PLOTS=MAKE_PLOTS,
-                                       PRINT_ALOT=PRINT_ALOT, SAVE_FIGURES=SAVE_FIGURES,
-                                       MAKE_EACH_SIMU_FIGURE=MAKE_EACH_SIMU_FIGURE)
-    G_df = G_df.append(G_df_simu_tidy)
+        # Calculate growth dataframe for one simulation
+        G_df_simu_tidy, end_freq_df_simu_tidy = calc_for_one_simu(simu_ind, iter_dict, avg_nt, spec_names=spec_names,
+                                                                  MAKE_PLOTS=MAKE_PLOTS,
+                                                                  PRINT_ALOT=PRINT_ALOT, SAVE_FIGURES=SAVE_FIGURES,
+                                                                  MAKE_EACH_SIMU_FIGURE=MAKE_EACH_SIMU_FIGURE)
+        end_freq_df_simu_tidy['iteration'] = iter_ind + 1
+        end_freq_df_iter = end_freq_df_iter.append(end_freq_df_simu_tidy)
 
-"""At this point, we are left with G_df in which the average growth rate curves for the different simulations are shown,
-and with a simu_dict_list where we have stored the parameters for each simulation"""
-G_df['freqa'] = G_df['freqb'] = G_df['freqc'] = 0
-G_df['CC0'] = G_df['CCC_ind'] = G_df['CCA_ind'] = G_df['CCB_ind'] = G_df['adv_cheat'] = 0
-for simu_ind in range(N_START_FREQCS):
-    simu_dict = simu_dict_list[simu_ind]
-    for key in simu_dict:
-        if key == 'freqs':
-            G_df.loc[G_df.simulation == simu_ind, 'freqa'] = simu_dict[key][0]
-            G_df.loc[G_df.simulation == simu_ind, 'freqb'] = simu_dict[key][1]
-            G_df.loc[G_df.simulation == simu_ind, 'freqc'] = simu_dict[key][2]
-        else:
-            G_df.loc[G_df.simulation == simu_ind, key] = simu_dict[key]
+        for spec_ind, spec in enumerate(spec_names_caps):
+            freqs_simu[spec_ind] = end_freq_df_simu_tidy[end_freq_df_simu_tidy.species == spec].end_freq.values[0]
 
-G_df.to_csv(os.path.join(working_dir, "results", "G_df_fixed_lambda_changing_freqc.csv"), index=False, header=True)
+    end_freq_df_iter['init_type'] = simu_dict['init_type']
+    end_freq_df_iter['model_type'] = simu_dict['model_type']
 
-plt.figure(1)
-ax = sns.lineplot(x='freqc', y='G', data=G_df[G_df.species == 'coop_advantage'])
-ax.grid(b=True)
-ax.legend(labels=['Growth benefit cooperation'])
-if SAVE_LAST_FIGURE:
-    plt.savefig(os.path.join(working_dir, "results", "cheater_fraction_vs_coop_benefit.png"))
+    end_freq_df = end_freq_df.append(end_freq_df_iter)
+
+"""Store end_freq_df"""
+end_freq_df.to_csv(os.path.join(working_dir, "results", "end_freq_10_propagations_lambda015_threemodel.csv"),
+                   index=False, header=True)
+
+"""Make stacked bar plots, one for each simulation"""
+# Set general plot properties
+sns.set_style("white")
+colors = sns.color_palette("muted", n_colors=3)
+g = sns.FacetGrid(end_freq_df, row="init_type", col='model_type', legend_out=True, height=1, aspect=N_SIMUS / 6)
+g = g.map_dataframe(mullerplot_fig2, 'lambda', 'end_freq', new_colors=colors)
+
+# Plot 1 - background - "total" (top) series
+# g = g.map_dataframe(plot_stacked_bars, 'lambda', 'end_freq', species='sum_all', new_color=colors[0])
+# Plot 2 - overlay - "bottom" series
+# g = g.map_dataframe(plot_stacked_bars, 'lambda', 'end_freq', species='sum_coops', new_color=colors[1])
+# Plot 3
+# g = g.map_dataframe(plot_stacked_bars, 'lambda', 'end_freq', species='A', new_color=colors[2])
+g.set_titles('')
+g.set_axis_labels('Number of propagations', '')
+sns.despine(left=True)
+
+topbar = plt.Rectangle((0, 0), 1, 1, fc=colors[0], edgecolor='none')
+middle_bar = plt.Rectangle((0, 0), 1, 1, fc=colors[1], edgecolor='none')
+bottombar = plt.Rectangle((0, 0), 1, 1, fc=colors[2], edgecolor='none')
+g.add_legend({'Coop A': topbar, 'Coop B': middle_bar, 'Cheater': bottombar})
+
+plt.savefig(os.path.join(working_dir, "results", "Figure2_lambda_015_threetypes.png"))

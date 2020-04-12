@@ -89,7 +89,7 @@ def calc_for_one_avg_nt(simu_dict, avg_nt=8, PRINT_ALOT=False, spec_names=['a', 
     adv_cheat = simu_dict['adv_cheat']
 
     """First, find the range of the number of cells we expect in droplets"""
-    nt_range = np.arange(poisson.ppf(0.0000001, avg_nt), poisson.ppf(0.99999999, avg_nt)).astype(int)
+    nt_range = np.arange(poisson.ppf(0.0001, avg_nt), poisson.ppf(0.9999, avg_nt)).astype(int)
     droplet_df = pd.DataFrame(
         columns=['na', 'nb', 'nc', 'prob_droplet', 'pa', 'pb', 'pc', 'coop_frac', 'mua', 'mub', 'muc'])
 
@@ -212,9 +212,9 @@ def calc_for_one_simu(simu_ind, simu_dict, avg_nt_range, spec_names=['a', 'b', '
 def get_starting_parameters():
     freqs = np.asarray([5 / 12, 5 / 12, 2 / 12])
     CC0 = 750
-    CCA_ind = 0
-    CCB_ind = 0
-    CCC_ind = 0
+    CCA_ind = 50
+    CCB_ind = 50
+    CCC_ind = 100
     adv_cheat = 2/5
 
     return freqs, CC0, CCA_ind, CCB_ind, CCC_ind, adv_cheat
@@ -234,6 +234,20 @@ def mullerplot(x_variable, y_variable, **kwargs):
     data = kwargs.pop("data")
     data = data.sort_values('lambda')
     x = np.unique(np.sort(data['lambda'])).tolist()
+    ya = data[data['species'] == 'A'][['end_freq']].values.flatten()
+    yb = data[data['species'] == 'B'][['end_freq']].values.flatten()
+    yc = data[data['species'] == 'C'][['end_freq']].values.flatten()
+    new_colors = kwargs.pop("new_colors")
+    y = np.vstack((ya, yb, yc)).tolist()
+
+    ax.stackplot(x, y, colors=new_colors)
+
+
+def mullerplot_fig2(x_variable, y_variable, **kwargs):
+    ax = plt.gca()
+    data = kwargs.pop("data")
+    data = data.sort_values('iteration')
+    x = np.unique(np.sort(data['iteration'])).tolist()
     ya = data[data['species'] == 'A'][['end_freq']].values.flatten()
     yb = data[data['species'] == 'B'][['end_freq']].values.flatten()
     yc = data[data['species'] == 'C'][['end_freq']].values.flatten()
