@@ -118,27 +118,35 @@ def calc_for_one_avg_nt(simu_dict, avg_nt=8, PRINT_ALOT=False, spec_names=['a', 
             coop_frac = 0.0 if denom == 0 else (2 * min(na, nb)) / denom
 
             # Find growth rates for all species in this droplet
-            # Growth factor option 1
-            # end_ab = CC0 * coop_frac * (1 / 2) * (1 - (nc / nt)) if nt != 0 else 0.
-            # mua = (1 / na) * end_ab if na != 0 else 0.
-            # mub = (1 / nb) * end_ab if nb != 0 else 0.
-            # muc = (1 / nc) * (CC0 * coop_frac + CCC_ind) * (nc / nt) if nc != 0 else 0.
-
-            # Find growth rates for all species in this droplet
-            # Growth factor option 2
-            # end_ab = CC0 * coop_frac * (1 / 2) * coop_frac if nt != 0 else 0.
-            # mua = (1 / na) * end_ab if na != 0 else 0.
-            # mub = (1 / nb) * end_ab if nb != 0 else 0.
-            # muc = (1 / nc) * (CC0 * coop_frac + CCC_ind) * (1 - coop_frac) if nc != 0 else 0.
-
-            # Find growth rates for all species in this droplet
-            # Growth factor option 3 (best option)
             end_fc = min(1, (1 + adv_cheat) * (nc / nt) - adv_cheat * (nc / nt) ** 2 if nt != 0 else 0.)
             end_fab = (1 / 2) * (1 - end_fc)
 
-            mua = max((1 - coop_frac)* (1 / na)* CCA_ind + coop_frac * (1/na) * CC0 * end_fab,1) if na != 0 else 0.
-            mub = max((1 - coop_frac) * (1 / nb) * CCB_ind + coop_frac * (1 / nb) * CC0 * end_fab,1) if nb != 0 else 0.
-            muc = max((1 - coop_frac) * (1 / nc) * CCC_ind + coop_frac * (1 / nc) * CC0 * end_fc,1) if nc != 0 else 0.
+            # Find independent growth of different species
+            if na * CCA_ind + nb * CCB_ind + nc * CCC_ind != 0:
+                fair_ind_end_A = CCA_ind * (na * CCA_ind / (na * CCA_ind + nb * CCB_ind + nc * CCC_ind))
+                fair_ind_end_B = CCB_ind * (nb * CCB_ind / (na * CCA_ind + nb * CCB_ind + nc * CCC_ind))
+                fair_ind_end_C = CCC_ind * (nc * CCC_ind / (na * CCA_ind + nb * CCB_ind + nc * CCC_ind))
+                fair_fa_ind = fair_ind_end_A / (fair_ind_end_A + fair_ind_end_B + fair_ind_end_C)
+                fair_fb_ind = fair_ind_end_B / (fair_ind_end_A + fair_ind_end_B + fair_ind_end_C)
+                fair_fc_ind = fair_ind_end_C / (fair_ind_end_A + fair_ind_end_B + fair_ind_end_C)
+
+                adv_ind_end_fc = min(1, (1 + adv_cheat) * (fair_fc_ind) - adv_cheat * (
+                    fair_fc_ind) ** 2 if nt != 0 else 0.)
+                ind_end_C = fair_ind_end_C * (adv_ind_end_fc / fair_fc_ind) if fair_fc_ind !=0 else 0.
+                if fair_ind_end_A + fair_ind_end_B != 0:
+                    adv_ind_end_fa = (1 - adv_ind_end_fc) * (fair_ind_end_A / (fair_ind_end_A + fair_ind_end_B))
+                    adv_ind_end_fb = (1 - adv_ind_end_fc) * (fair_ind_end_B / (fair_ind_end_A + fair_ind_end_B))
+                    ind_end_A = fair_ind_end_A * (adv_ind_end_fa / fair_fa_ind) if fair_fa_ind !=0 else 0.
+                    ind_end_B = fair_ind_end_B * (adv_ind_end_fb / fair_fb_ind) if fair_fb_ind !=0 else 0.
+                else:
+                    ind_end_A = ind_end_B = 0
+
+            else:
+                ind_end_A = ind_end_B = ind_end_C = 0
+
+            mua = max((1 - coop_frac) * (1 / na) * ind_end_A + coop_frac * (1 / na) * CC0 * end_fab, 1) if na != 0 else 0.
+            mub = max((1 - coop_frac) * (1 / nb) * ind_end_B + coop_frac * (1 / nb) * CC0 * end_fab,1) if nb != 0 else 0.
+            muc = max((1 - coop_frac) * (1 / nc) * ind_end_C + coop_frac * (1 / nc) * CC0 * end_fc,1) if nc != 0 else 0.
 
             droplet_df = droplet_df.append(
                 {'na': na, 'nb': nb, 'nc': nc, 'prob_droplet': prob_droplet, 'pa': p_species[0], 'pb': p_species[1],
