@@ -17,7 +17,7 @@ N_ITERATIONS = 4
 freqs, CC0, CCA_ind, CCB_ind, CCC_ind, adv_cheat = get_starting_parameters()
 
 simu_dict_list = []
-avg_nt = 2  # This nt was picked because it was the lambda that gave the largest benefit to coops on average
+avg_nt = .15  # This nt was picked because it was the lambda that gave the largest benefit to coops on average
 
 CCAind_types = [7.5, 150]
 CCBind_types = [0, 0]
