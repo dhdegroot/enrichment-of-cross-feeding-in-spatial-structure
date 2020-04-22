@@ -10,7 +10,7 @@ SAVE_FIGURES = False
 MAKE_EACH_SIMU_FIGURE = False
 PRINT_ALOT = False
 MAKE_PLOTS = False
-N_ITERATIONS = 40
+N_ITERATIONS = 4
 
 """Get parameters"""
 # These parameters can be changed in the helpers_coop_droplets.py-file
