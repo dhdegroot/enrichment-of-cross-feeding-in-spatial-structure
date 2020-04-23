@@ -23,7 +23,7 @@ CCAind_types = [7.5, 150]
 CCBind_types = [0, 0]
 CCCind_types = [7.5, 150]
 
-start_freqs = [np.array([.41, .09, .5]), np.array([.16, .62, .22])]
+start_freqs = [np.array([.41, .09, .5]), np.array([0.35, 0.43, 0.22])]
 
 """Generate set of parameters for all simulations"""
 for i in range(2):
