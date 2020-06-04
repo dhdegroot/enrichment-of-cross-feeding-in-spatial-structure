@@ -4,15 +4,15 @@ from helpers_coop_droplets import *
 working_dir = os.getcwd()
 spec_names = ['a', 'b', 'c']
 spec_names_caps = ['A', 'B', 'C']
-LOAD_DATA = True
+LOAD_DATA = False
 SAVE_LAST_FIGURE = True
 SAVE_FIGURES = False
 MAKE_EACH_SIMU_FIGURE = False
 PRINT_ALOT = False
 MAKE_PLOTS = False
 N_ITERATIONS = 40
-N_CCC_ind = 20
-N_CCAB_ind = 20
+N_CCC_ind = 30
+N_CCAB_ind = 30
 
 if not LOAD_DATA:
     """Get parameters"""
@@ -26,9 +26,12 @@ if not LOAD_DATA:
     avg_nt = 2  # This nt was picked because it was the lambda that gave a large benefit to coops on average
     start_freqs = np.array([0.5, 0.01, 0.49])
 
-    start_CCC_ind_factor = 0.05
+    start_CCC_ind_factor = 0.01
+    # start_CCC_ind_factor = 0.05
     end_CCC_ind_factor = 0.5
-    CCC_ind_factors = np.exp(np.linspace(np.log(start_CCC_ind_factor), np.log(end_CCC_ind_factor), N_CCC_ind))
+
+    CCC_ind_factors = np.linspace(start_CCC_ind_factor, end_CCC_ind_factor, N_CCC_ind)
+    # CCC_ind_factors = np.exp(np.linspace(np.log(start_CCC_ind_factor), np.log(end_CCC_ind_factor), N_CCC_ind))
 
     start_CCAB_ind_factor = 0
     end_CCAB_ind_factor = 1
