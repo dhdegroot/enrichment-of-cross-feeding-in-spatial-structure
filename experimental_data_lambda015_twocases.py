@@ -17,13 +17,14 @@ N_ITERATIONS = 4
 freqs, CC0, CCA_ind, CCB_ind, CCC_ind, adv_cheat = get_starting_parameters()
 
 simu_dict_list = []
-avg_nt = .15  # This nt was picked because it was the lambda that gave the largest benefit to coops on average
+avg_nt = 2
 
-CCAind_types = [7.5, 150]
-CCBind_types = [0, 0]
-CCCind_types = [7.5, 150]
+CCAind_types = [7.5, 750*0.07]
+CCBind_types = [0, 750*0.02]
+CCCind_types = [7.5, 750*0.10]
 
-start_freqs = [np.array([.41, .09, .5]), np.array([0.35, 0.43, 0.22])]
+adv_cheat = 0.52
+start_freqs = [np.array([.41, .09, .5]), np.array([0.435, 0.13, 0.435])]
 
 """Generate set of parameters for all simulations"""
 for i in range(2):
@@ -73,7 +74,7 @@ for simu_ind, simu_dict in enumerate(simu_dict_list):
     end_freq_df = end_freq_df.append(end_freq_df_iter)
 
 """Store end_freq_df"""
-end_freq_df.to_csv(os.path.join(working_dir, "results", "experimental_simulations_end_freq_df_lambda015_twocases.csv"),
+end_freq_df.to_csv(os.path.join(working_dir, "results", "experimental_simulations_end_freq_df_lambda2_twocases.csv"),
                    index=False, header=True)
 
 """Make stacked bar plots, one for each simulation"""
@@ -99,4 +100,4 @@ bottombar = plt.Rectangle((0, 0), 1, 1, fc=colors[2], edgecolor='none')
 g.add_legend({'Coop A': topbar, 'Coop B': middle_bar, 'Cheater': bottombar})
 
 plt.savefig(os.path.join(working_dir, "results", "experimental_simulation_lambda015_twocases.png"))
-
+plt.show()
