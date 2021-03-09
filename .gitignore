@@ -20,6 +20,7 @@ python_self-organising-regulation/.idea/workspace.xml*
 **/*.out
 **/*.log
 **/*.aux
+venv/
 Wild Ideas/Antsy metabolism.docx
 python_self-organising-regulation/.idea/libraries/R_User_Library.xml
 python_self-organising-regulation/.idea/misc.xml
